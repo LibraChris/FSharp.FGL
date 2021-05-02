@@ -164,13 +164,13 @@ module Louvain =
                    |> Array.sumBy (fun (source,target,weight) -> weight)
                                  
                //Neighbours as [|[|vertexPosition, weight|]|];Application of neighbours from before.
-               let getNeighbours(vertex) =                  
-                   
-                   vertex
-                   |> graph.GetConnectedEdges 
-                   |> Array.map(fun (s, t, w) ->
-                       if s=vertex then (t,w)
-                       else (s,w))
+               //let getNeighbours(vertex) =                  
+               //    
+               //    vertex
+               //    |> graph.GetConnectedEdges 
+               //    |> Array.map(fun (s, t, w) ->
+               //        if s=vertex then (t,w)
+               //        else (s,w))
                                    
                let neighbours =
                     [|
@@ -262,11 +262,11 @@ module Louvain =
                        //All neighbors of the node with their edgeWeight.         
                        let neighbors           = 
                            
-                           getNeighbours(node)
-                           |> Array.filter (fun (vertex,weight) -> vertex <> node)    
-                           |> Array.sort
-                           //neighbours.[counter]
-                           //|> Array.filter (fun (vertex,weight) -> vertex <> node) 
+                           //getNeighbours(node)
+                           //|> Array.filter (fun (vertex,weight) -> vertex <> node)    
+                           //|> Array.sort
+                           neighbours.[counter]
+                           |> Array.filter (fun (vertex,weight) -> vertex <> node) 
                            //Dictionary.getValue counter neighbourDict 
                            //|> Array.filter (fun (vertex,weight) -> vertex <> node) 
 
