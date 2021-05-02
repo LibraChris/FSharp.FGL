@@ -153,9 +153,13 @@ module Louvain =
                let verti =
                    graph.Vertices()
 
-               for i in graph.Vertices() do
-                   
-                   graph.SetLabel (i,i) |> ignore
+               //for i in graph.Vertices() do
+               //    
+               //    graph.SetLabel (i,i) |> ignore
+               let mutable counter = 0
+               for i in verti do
+                    graph.SetLabel (i,counter)|>ignore
+                    counter <- (counter+1)
 
                //Total weight of all edges combined
                let totalWeight =
@@ -214,25 +218,44 @@ module Louvain =
                //             |>Array.sumBy(fun (s,t,w) -> if s=i&&t=i then w else 0.)
                //    |]
 
-               let communitySumtotalSumintern =
-                   let output = System.Collections.Generic.Dictionary<int,float*float>() 
-                   for i=0 to graph.VertexCount-1 do
-                       let vertex = verti.[i]
-                       let label = graph.GetLabel vertex
-                       let communityWeightTotalStart = (graph.WeightedDegree ((Array.sumBy(fun (s,t,w) -> w)),vertex))
-                       let selfLoopsStart = selfLoops vertex
-                       output.Add(label,(communityWeightTotalStart,selfLoopsStart))
-                   output       
+               //let communitySumtotalSumintern =
+               //    let output = System.Collections.Generic.Dictionary<int,float*float>() 
+               //    for i=0 to graph.VertexCount-1 do
+               //        let vertex = verti.[i]
+               //        let label = graph.GetLabel vertex
+               //        let communityWeightTotalStart = (graph.WeightedDegree ((Array.sumBy(fun (s,t,w) -> w)),vertex))
+               //        let selfLoopsStart = selfLoops vertex
+               //        output.Add(label,(communityWeightTotalStart,selfLoopsStart))
+               //    output       
                
+               let communitySumtotalSumintern =
+                   [|
+                       for i=0 to graph.VertexCount-1 do
+                           let vertex = verti.[i]
+                           let communityWeightTotalStart = (graph.WeightedDegree ((Array.sumBy(fun (s,t,w) -> w)),vertex))
+                           let selfLoopsStart = selfLoops vertex
+                           (communityWeightTotalStart,selfLoopsStart)
+                    |]
+
+               //let modularityQuality startValue =
+               //    if startValue <> 0. then failwith "Wrong startValue"
+               //    let mutable q = startValue
+               //    for i in communitySumtotalSumintern do
+               //        let (totalSumC,sumIntern) = i.Value
+               //        if totalSumC > 0. then 
+               //            let calculation = (sumIntern - (totalSumC*totalSumC) / totalWeight)
+               //            q <- q + (calculation)
+               //    (q/totalWeight)
                let modularityQuality startValue =
                    if startValue <> 0. then failwith "Wrong startValue"
                    let mutable q = startValue
                    for i in communitySumtotalSumintern do
-                       let (totalSumC,sumIntern) = i.Value
+                       let (totalSumC,sumIntern) = i
                        if totalSumC > 0. then 
                            let calculation = (sumIntern - (totalSumC*totalSumC) / totalWeight)
                            q <- q + (calculation)
                    (q/totalWeight)
+                             
                //Minimal increase in modularity Quality that has to be achieved. If the increase in modularity is lower, then the first phase of the louvain Algorithm ends and a new iteration can begin.
                let increaseMin = 0.000001
 
@@ -253,7 +276,7 @@ module Louvain =
                        let originalCommunity               = graph.GetLabel node
 
                        //Sum of all intern weights of the originalCommunity community.
-                       let (originalCommunityTotalSum,originalCommunitySumIntern)       = Dictionary.getValue originalCommunity communitySumtotalSumintern
+                       let (originalCommunityTotalSum,originalCommunitySumIntern)       = communitySumtotalSumintern.[originalCommunity] //Dictionary.getValue originalCommunity communitySumtotalSumintern
                        //Sum of all weights that are connected to the originalCommunity.
                                    
                        //Remove node from its original community.
@@ -298,8 +321,9 @@ module Louvain =
                            let communityWeightTotalUpdate =  (originalCommunityTotalSum-ki)
                            let sumInternUpdate            =  (originalCommunitySumIntern-((2.*(weightofConnectionToOldCommunity))+(selfLoops node)))                  
 
-                           communitySumtotalSumintern.Item originalCommunity <- (communityWeightTotalUpdate,sumInternUpdate)
-
+                           //communitySumtotalSumintern.Item originalCommunity <- (communityWeightTotalUpdate,sumInternUpdate)
+                           communitySumtotalSumintern.[originalCommunity] <- (communityWeightTotalUpdate,sumInternUpdate)
+                           
                            let connectedCommunitiesCondensedNew =
                                Array.append [|originalCommunity,weightofConnectionToOldCommunity|] connectedCommunitiesCondensed
                                |> Array.distinct
@@ -313,7 +337,7 @@ module Louvain =
                                    |> Array.map (fun (community,connectionToCommunity) -> 
                                            (
                                            community,
-                                           (connectionToCommunity-((Dictionary.getValue community communitySumtotalSumintern|>fst)*ki/totalWeight)),
+                                           (connectionToCommunity-(((*Dictionary.getValue community communitySumtotalSumintern*)communitySumtotalSumintern.[community]|>fst)*ki/totalWeight)),
                                            connectionToCommunity
                                            )
                                        )
@@ -326,20 +350,22 @@ module Louvain =
                                
                                //Resetting the community to its original state.                       
                                graph.SetLabel (node,originalCommunity) |> ignore
-                               communitySumtotalSumintern.Item originalCommunity <- (originalCommunityTotalSum,originalCommunitySumIntern)
-                           
+                               //communitySumtotalSumintern.Item originalCommunity <- (originalCommunityTotalSum,originalCommunitySumIntern)
+                               communitySumtotalSumintern.[originalCommunity]  <- (originalCommunityTotalSum,originalCommunitySumIntern)
+
                                louvainOneLevel (counter+1) (nbOfMoves)
 
                            else                                           
 
-                               let (communityNewSum,communityNewIn) = Dictionary.getValue bestCommunity communitySumtotalSumintern
+                               let (communityNewSum,communityNewIn) = communitySumtotalSumintern.[bestCommunity]//Dictionary.getValue bestCommunity communitySumtotalSumintern
 
                                //Moving the node to its new community.
                                let sumInternBestCommunity              =      (communityNewIn+((2.*(connectionToBestCommunity)+(selfLoops node))))
                                let communityWeightTotalBestCommunity   =      (communityNewSum+ki)
                                
                                graph.SetLabel (node,bestCommunity) |> ignore
-                               communitySumtotalSumintern.Item bestCommunity <- (communityWeightTotalBestCommunity,sumInternBestCommunity)
+                               (*communitySumtotalSumintern.Item bestCommunity*) 
+                               communitySumtotalSumintern.[bestCommunity] <- (communityWeightTotalBestCommunity,sumInternBestCommunity)
 
                                (if bestCommunity <> originalCommunity then (nbOfMoves+1) else nbOfMoves)
                                |> louvainOneLevel (counter+1) 
