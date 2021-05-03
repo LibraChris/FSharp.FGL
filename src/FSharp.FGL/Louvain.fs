@@ -200,10 +200,10 @@ module Louvain =
                //     output
                     
                //All self-referencing loops of the vertices.
-               //let selfLoops vertex =
-               //      
-               //    graph.GetConnectedEdges(vertex)
-               //    |>Array.sumBy(fun (s,t,w) -> if s=vertex&&t=vertex then w else 0.)
+               let selfLoops vertex =
+                     
+                   graph.GetConnectedEdges(vertex)
+                   |>Array.sumBy(fun (s,t,w) -> if s=vertex&&t=vertex then w else 0.)
                    //[|
                    //     for i=0 to (graph.VertexCount-1) do
                    //         neighbours.[i]
@@ -211,12 +211,12 @@ module Louvain =
                    //|]
 
                
-               let selfLoopsArray =
-                   [|
-                        for i in verti do
-                            graph.GetConnectedEdges(i)
-                            |>Array.sumBy(fun (s,t,w) -> if s=i&&t=i then w else 0.)
-                   |]
+               //let selfLoopsArray =
+               //    [|
+               //         for i in verti do
+               //             graph.GetConnectedEdges(i)
+               //             |>Array.sumBy(fun (s,t,w) -> if s=i&&t=i then w else 0.)
+               //    |]
 
                //let communitySumtotalSumintern =
                //    let output = System.Collections.Generic.Dictionary<int,float*float>() 
@@ -233,7 +233,7 @@ module Louvain =
                        for i=0 to graph.VertexCount-1 do
                            let vertex = verti.[i]
                            let communityWeightTotalStart = (graph.WeightedDegree ((Array.sumBy(fun (s,t,w) -> w)),vertex))
-                           let selfLoopsStart = selfLoopsArray.[i]
+                           let selfLoopsStart = selfLoops vertex
                            (communityWeightTotalStart,selfLoopsStart)
                     |]
 
@@ -319,7 +319,7 @@ module Louvain =
 
                            //Removing the node from its community, updating community values communityWeightTotal and sumIntern.
                            let communityWeightTotalUpdate =  (originalCommunityTotalSum-ki)
-                           let sumInternUpdate            =  (originalCommunitySumIntern-((2.*(weightofConnectionToOldCommunity))+(selfLoopsArray.[counter])))                  
+                           let sumInternUpdate            =  (originalCommunitySumIntern-((2.*(weightofConnectionToOldCommunity))+(selfLoops node)))                  
 
                            //communitySumtotalSumintern.Item originalCommunity <- (communityWeightTotalUpdate,sumInternUpdate)
                            communitySumtotalSumintern.[originalCommunity] <- (communityWeightTotalUpdate,sumInternUpdate)
@@ -360,7 +360,7 @@ module Louvain =
                                let (communityNewSum,communityNewIn) = communitySumtotalSumintern.[bestCommunity]//Dictionary.getValue bestCommunity communitySumtotalSumintern
 
                                //Moving the node to its new community.
-                               let sumInternBestCommunity              =      (communityNewIn+((2.*(connectionToBestCommunity)+(selfLoopsArray.[counter]))))
+                               let sumInternBestCommunity              =      (communityNewIn+((2.*(connectionToBestCommunity)+(selfLoops node))))
                                let communityWeightTotalBestCommunity   =      (communityNewSum+ki)
                                
                                graph.SetLabel (node,bestCommunity) |> ignore
